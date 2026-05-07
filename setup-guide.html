@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Green Salon — Setup Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:   #07080c;
+  --s1:   #0e0f16;
+  --s2:   #161720;
+  --b:    rgba(255,255,255,.07);
+  --b2:   rgba(255,255,255,.13);
+  --acc:  #22d3a8;
+  --warn: #f59e0b;
+  --txt:  #eeeef5;
+  --dim:  #9898b8;
+  --muted:#6b6b8a;
+  --red:  #f43f5e;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--txt);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── NOISE TEXTURE overlay ── */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:0;
+  opacity:.5;
+}
+
+/* ── HERO ── */
+.hero {
+  position:relative;
+  padding:70px 24px 60px;
+  text-align:center;
+  border-bottom:1px solid var(--b);
+  overflow:hidden;
+}
+/* Radial glow behind hero */
+.hero::after {
+  content:'';
+  position:absolute;
+  top:-80px; left:50%;
+  transform:translateX(-50%);
+  width:600px; height:400px;
+  background:radial-gradient(ellipse, rgba(34,211,168,.14) 0%, transparent 70%);
+  pointer-events:none;
+}
+.hero-eyebrow {
+  display:inline-block;
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  letter-spacing:2.5px;
+  text-transform:uppercase;
+  color:var(--acc);
+  background:rgba(34,211,168,.1);
+  border:1px solid rgba(34,211,168,.25);
+  padding:5px 14px;
+  border-radius:20px;
+  margin-bottom:22px;
+}
+.hero-title {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(52px, 10vw, 90px);
+  letter-spacing:2px;
+  line-height:.95;
+  margin-bottom:14px;
+}
+.hero-title em { color:var(--acc); font-style:normal; }
+.hero-sub {
+  font-size:15px;
+  color:var(--dim);
+  max-width:480px;
+  margin:0 auto;
+  line-height:1.65;
+}
+
+/* ── LAYOUT ── */
+.wrap {
+  max-width:780px;
+  margin:0 auto;
+  padding:0 24px;
+  position:relative;
+  z-index:1;
+}
+
+/* ── PROGRESS BAR (top of page) ── */
+.progress-bar {
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:rgba(7,8,12,.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--b);
+  padding:14px 24px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  overflow-x:auto;
+  -ms-overflow-style:none;
+  scrollbar-width:none;
+}
+.progress-bar::-webkit-scrollbar { display:none; }
+.pb-step {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-shrink:0;
+  cursor:pointer;
+}
+.pb-num {
+  width:24px; height:24px;
+  border-radius:50%;
+  background:var(--s2);
+  border:1px solid var(--b2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:600;
+  color:var(--muted);
+  transition:all .2s;
+  flex-shrink:0;
+}
+.pb-step.done .pb-num { background:var(--acc); border-color:var(--acc); color:#07080c; }
+.pb-step.active .pb-num { border-color:var(--acc); color:var(--acc); }
+.pb-lbl {
+  font-size:11px;
+  color:var(--muted);
+  white-space:nowrap;
+  transition:color .2s;
+}
+.pb-step.done .pb-lbl, .pb-step.active .pb-lbl { color:var(--txt); }
+.pb-line { flex:1; height:1px; background:var(--b); flex-shrink:0; min-width:16px; max-width:32px; }
+.pb-line.done { background:var(--acc); }
+
+/* ── STEPS ── */
+.steps { padding:36px 0 80px; }
+
+/* Each step block */
+.step {
+  margin-bottom:48px;
+  animation:fadeup .4s ease both;
+}
+@keyframes fadeup {
+  from { opacity:0; transform:translateY(12px); }
+  to   { opacity:1; transform:none; }
+}
+.step:nth-child(1) { animation-delay:.05s; }
+.step:nth-child(2) { animation-delay:.10s; }
+.step:nth-child(3) { animation-delay:.15s; }
+.step:nth-child(4) { animation-delay:.20s; }
+.step:nth-child(5) { animation-delay:.25s; }
+.step:nth-child(6) { animation-delay:.30s; }
+.step:nth-child(7) { animation-delay:.35s; }
+
+/* Step header row */
+.step-hdr {
+  display:flex;
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:18px;
+}
+.step-num {
+  width:42px; height:42px;
+  border-radius:13px;
+  background:linear-gradient(135deg, rgba(34,211,168,.2), rgba(34,211,168,.06));
+  border:1px solid rgba(34,211,168,.3);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:22px;
+  color:var(--acc);
+  flex-shrink:0;
+  margin-top:2px;
+}
+.step-meta {}
+.step-label {
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+.step-title {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:28px;
+  letter-spacing:1px;
+  line-height:1;
+  color:var(--txt);
+}
+
+/* Step content card */
+.step-card {
+  background:var(--s1);
+  border:1px solid var(--b);
+  border-radius:16px;
+  overflow:hidden;
+}
+
+/* Sub-section inside card */
+.sub {
+  padding:18px 20px;
+  border-bottom:1px solid var(--b);
+}
+.sub:last-child { border-bottom:none; }
+.sub-title {
+  font-size:12px;
+  font-weight:600;
+  color:var(--dim);
+  text-transform:uppercase;
+  letter-spacing:.7px;
+  margin-bottom:12px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.sub-title::before {
+  content:'';
+  display:inline-block;
+  width:3px; height:14px;
+  background:var(--acc);
+  border-radius:2px;
+}
+
+/* Action items (numbered list) */
+.actions { display:flex; flex-direction:column; gap:10px; }
+.action {
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  padding:12px 14px;
+  background:var(--s2);
+  border-radius:10px;
+  border:1px solid var(--b);
+}
+.action-n {
+  width:22px; height:22px;
+  border-radius:6px;
+  background:rgba(34,211,168,.12);
+  border:1px solid rgba(34,211,168,.2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700;
+  color:var(--acc);
+  flex-shrink:0;
+  margin-top:1px;
+}
+.action-txt { font-size:13px; line-height:1.6; color:var(--txt); }
+.action-txt strong { color:var(--acc); font-weight:600; }
+.action-txt em { color:var(--warn); font-style:normal; font-weight:500; }
+
+/* Code block */
+.code-block {
+  background:#020305;
+  border:1px solid rgba(34,211,168,.18);
+  border-radius:10px;
+  padding:14px 16px;
+  font-family:'DM Mono',monospace;
+  font-size:12px;
+  line-height:1.75;
+  color:#a8ffdf;
+  overflow-x:auto;
+  margin-top:4px;
+  position:relative;
+}
+.code-block .comment { color:var(--muted); }
+.code-block .key     { color:var(--warn); }
+.code-block .val     { color:#a8ffdf; }
+.code-block .str     { color:#fb923c; }
+
+/* Copy button on code blocks */
+.code-wrap { position:relative; margin-top:10px; }
+.copy-btn {
+  position:absolute;
+  top:8px; right:8px;
+  padding:4px 10px;
+  background:rgba(34,211,168,.12);
+  border:1px solid rgba(34,211,168,.25);
+  border-radius:6px;
+  color:var(--acc);
+  font-size:11px;
+  font-family:'DM Mono',monospace;
+  cursor:pointer;
+  transition:all .15s;
+}
+.copy-btn:hover { background:rgba(34,211,168,.22); }
+.copy-btn.copied { color:var(--txt); background:rgba(34,211,168,.3); }
+
+/* Info / warning callouts */
+.callout {
+  display:flex;
+  gap:11px;
+  padding:13px 15px;
+  border-radius:10px;
+  font-size:13px;
+  line-height:1.6;
+  margin-top:10px;
+}
+.callout.warn {
+  background:rgba(245,158,11,.07);
+  border:1px solid rgba(245,158,11,.22);
+  color:var(--warn);
+}
+.callout.info {
+  background:rgba(34,211,168,.06);
+  border:1px solid rgba(34,211,168,.2);
+  color:var(--acc);
+}
+.callout.red {
+  background:rgba(244,63,94,.07);
+  border:1px solid rgba(244,63,94,.22);
+  color:var(--red);
+}
+.callout-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+.callout-txt { color:var(--txt); }
+.callout-txt strong { color:inherit; }
+
+/* Visual mockup: URL bar illustration */
+.url-mockup {
+  background:#020305;
+  border:1px solid var(--b2);
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:10px;
+}
+.url-bar {
+  background:var(--s2);
+  padding:8px 14px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border-bottom:1px solid var(--b);
+}
+.url-dots { display:flex; gap:5px; }
+.url-dots span {
+  width:9px; height:9px; border-radius:50%;
+}
+.url-dots span:nth-child(1) { background:#f43f5e44; }
+.url-dots span:nth-child(2) { background:#f59e0b44; }
+.url-dots span:nth-child(3) { background:#22d3a844; }
+.url-text {
+  flex:1;
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  color:var(--dim);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.url-text em { color:var(--acc); font-style:normal; }
+.url-content {
+  padding:16px;
+  font-family:'DM Mono',monospace;
+  font-size:12px;
+  color:#a8ffdf;
+  line-height:1.7;
+}
+
+/* Table */
+.tbl { width:100%; border-collapse:collapse; }
+.tbl th {
+  text-align:left; padding:9px 14px;
+  font-size:11px; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.6px;
+  border-bottom:1px solid var(--b); font-weight:500;
+}
+.tbl td {
+  padding:10px 14px; font-size:13px;
+  border-bottom:1px solid rgba(255,255,255,.03);
+}
+.tbl tr:last-child td { border-bottom:none; }
+.tbl td:first-child { color:var(--acc); font-family:'DM Mono',monospace; font-size:12px; }
+
+/* Checklist */
+.checklist { display:flex; flex-direction:column; gap:8px; }
+.chk {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 14px;
+  background:var(--s2);
+  border-radius:9px;
+  border:1px solid var(--b);
+  cursor:pointer;
+  transition:all .15s;
+  user-select:none;
+}
+.chk:hover { border-color:var(--b2); }
+.chk.done { border-color:rgba(34,211,168,.25); background:rgba(34,211,168,.05); }
+.chk-box {
+  width:20px; height:20px;
+  border-radius:6px;
+  border:1.5px solid var(--b2);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  transition:all .15s;
+  font-size:12px;
+}
+.chk.done .chk-box { background:var(--acc); border-color:var(--acc); color:#07080c; }
+.chk-txt { font-size:13px; }
+.chk.done .chk-txt { color:var(--muted); text-decoration:line-through; }
+
+/* Password row */
+.pw-row {
+  display:flex; align-items:center;
+  gap:10px; flex-wrap:wrap;
+  padding:10px 14px;
+  background:var(--s2);
+  border-radius:9px;
+  border:1px solid var(--b);
+}
+.pw-lbl { font-size:11px; color:var(--muted); flex-shrink:0; }
+.pw-val {
+  font-family:'DM Mono',monospace;
+  font-size:13px;
+  color:var(--warn);
+  letter-spacing:.5px;
+  flex:1;
+}
+
+/* Done banner */
+.done-banner {
+  text-align:center;
+  padding:40px 24px;
+  margin-top:16px;
+  background:linear-gradient(135deg, rgba(34,211,168,.08), rgba(34,211,168,.03));
+  border:1px solid rgba(34,211,168,.2);
+  border-radius:20px;
+}
+.done-icon { font-size:48px; margin-bottom:12px; }
+.done-title {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:36px;
+  letter-spacing:1px;
+  color:var(--acc);
+  margin-bottom:8px;
+}
+.done-sub { color:var(--dim); font-size:14px; line-height:1.6; max-width:380px; margin:0 auto; }
+
+/* print */
+@media print {
+  body { background:#fff; color:#000; }
+  .progress-bar { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- STICKY PROGRESS BAR -->
+<div class="progress-bar" id="progress-bar">
+  <div class="pb-step active" onclick="scrollToStep(1)">
+    <div class="pb-num">1</div>
+    <div class="pb-lbl">Sheets</div>
+  </div>
+  <div class="pb-line"></div>
+  <div class="pb-step" onclick="scrollToStep(2)">
+    <div class="pb-num">2</div>
+    <div class="pb-lbl">Script</div>
+  </div>
+  <div class="pb-line"></div>
+  <div class="pb-step" onclick="scrollToStep(3)">
+    <div class="pb-num">3</div>
+    <div class="pb-lbl">Paste IDs</div>
+  </div>
+  <div class="pb-line"></div>
+  <div class="pb-step" onclick="scrollToStep(4)">
+    <div class="pb-num">4</div>
+    <div class="pb-lbl">Run Setup</div>
+  </div>
+  <div class="pb-line"></div>
+  <div class="pb-step" onclick="scrollToStep(5)">
+    <div class="pb-num">5</div>
+    <div class="pb-lbl">Deploy</div>
+  </div>
+  <div class="pb-line"></div>
+  <div class="pb-step" onclick="scrollToStep(6)">
+    <div class="pb-num">6</div>
+    <div class="pb-lbl">Owner Login</div>
+  </div>
+  <div class="pb-line"></div>
+  <div class="pb-step" onclick="scrollToStep(7)">
+    <div class="pb-num">7</div>
+    <div class="pb-lbl">Staff App</div>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow">Setup Guide · Green Salon Final</div>
+    <div class="hero-title">Get <em>running</em><br>in 15 minutes</div>
+    <div class="hero-sub">Follow these 7 steps in order. Don't skip any. Takes about 15 minutes from zero to live.</div>
+  </div>
+</div>
+
+<!-- STEPS -->
+<div class="wrap">
+<div class="steps">
+
+<!-- ═══════════════════════════════ STEP 1 ═══ -->
+<div class="step" id="step-1">
+  <div class="step-hdr">
+    <div class="step-num">1</div>
+    <div class="step-meta">
+      <div class="step-label">Step 01 · ~3 min</div>
+      <div class="step-title">Create 4 Google Sheets</div>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="sub">
+      <div class="sub-title">What to create</div>
+      <table class="tbl">
+        <thead><tr><th>Sheet Name</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>GreenSalon_Master</td><td>Branch registry, settings, audit log</td></tr>
+          <tr><td>GreenSalon_JCNagar</td><td>JC Nagar branch data</td></tr>
+          <tr><td>GreenSalon_Koramangala</td><td>Koramangala branch data</td></tr>
+          <tr><td>GreenSalon_Indiranagar</td><td>Indiranagar branch data</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sub">
+      <div class="sub-title">How to create each sheet</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">1</div><div class="action-txt">Open <strong>sheets.google.com</strong> — make sure you're in the Gmail account you'll use for Apps Script</div></div>
+        <div class="action"><div class="action-n">2</div><div class="action-txt">Click <strong>+ Blank spreadsheet</strong> — rename it to the names above</div></div>
+        <div class="action"><div class="action-n">3</div><div class="action-txt">Do this <em>4 times</em> — one for Master, one for each of the 3 branches</div></div>
+        <div class="action"><div class="action-n">4</div><div class="action-txt">From each sheet URL, copy the <strong>Sheet ID</strong> — it's the long string between <strong>/d/</strong> and <strong>/edit</strong></div></div>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="sub-title">Where is the Sheet ID?</div>
+      <div class="url-mockup">
+        <div class="url-bar">
+          <div class="url-dots"><span></span><span></span><span></span></div>
+          <div class="url-text">docs.google.com/spreadsheets/d/<em>1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</em>/edit#gid=0</div>
+        </div>
+        <div class="url-content" style="padding:12px 16px;font-size:11px">
+          <span style="color:var(--muted)">https://docs.google.com/spreadsheets/d/</span><span style="color:var(--acc);background:rgba(34,211,168,.12);padding:2px 6px;border-radius:4px">1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</span><span style="color:var(--muted)">/edit</span><br><br>
+          <span style="color:var(--acc)">↑ Copy THIS part — save it, you'll need it in Step 3</span>
+        </div>
+      </div>
+      <div class="callout warn" style="margin-top:12px">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-txt"><strong>All 4 sheets must be in the same Gmail account</strong> as the Apps Script. Different accounts = permission errors.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 2 ═══ -->
+<div class="step" id="step-2">
+  <div class="step-hdr">
+    <div class="step-num">2</div>
+    <div class="step-meta">
+      <div class="step-label">Step 02 · ~2 min</div>
+      <div class="step-title">Create the Apps Script</div>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="sub">
+      <div class="sub-title">Create project</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">1</div><div class="action-txt">Go to <strong>script.google.com</strong> — sign in with the same Gmail account</div></div>
+        <div class="action"><div class="action-n">2</div><div class="action-txt">Click <strong>New Project</strong> (top left)</div></div>
+        <div class="action"><div class="action-n">3</div><div class="action-txt">Click the title <strong>"Untitled project"</strong> at the top → rename it to <em>Green Salon</em></div></div>
+        <div class="action"><div class="action-n">4</div><div class="action-txt">In the editor, <strong>select all</strong> the existing code (Ctrl+A) → <strong>delete it</strong></div></div>
+        <div class="action"><div class="action-n">5</div><div class="action-txt">Open the <strong>Code.gs</strong> file you downloaded → <strong>copy everything</strong> → <strong>paste</strong> into the editor</div></div>
+        <div class="action"><div class="action-n">6</div><div class="action-txt">Press <strong>Ctrl+S</strong> (or click 💾 Save) — the project name shows in the tab</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 3 ═══ -->
+<div class="step" id="step-3">
+  <div class="step-hdr">
+    <div class="step-num">3</div>
+    <div class="step-meta">
+      <div class="step-label">Step 03 · ~2 min</div>
+      <div class="step-title">Paste Your Sheet IDs</div>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="sub">
+      <div class="sub-title">Find these lines at the top of Code.gs</div>
+      <div class="code-wrap">
+        <div class="code-block"><span class="comment">// REPLACE these 4 values with your actual IDs from Step 1</span>
+
+<span class="key">const</span> MASTER_SHEET_ID = <span class="str">"MASTER_SHEET_ID_HERE"</span>;
+
+<span class="key">const</span> BRANCH_SHEETS = {
+  <span class="str">"branch1"</span>: <span class="str">"BRANCH1_SHEET_ID_HERE"</span>,  <span class="comment">// JC Nagar</span>
+  <span class="str">"branch2"</span>: <span class="str">"BRANCH2_SHEET_ID_HERE"</span>,  <span class="comment">// Koramangala</span>
+  <span class="str">"branch3"</span>: <span class="str">"BRANCH3_SHEET_ID_HERE"</span>,  <span class="comment">// Indiranagar</span>
+};</div>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="sub-title">Replace each placeholder with your real ID</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">1</div><div class="action-txt">Delete <strong>"MASTER_SHEET_ID_HERE"</strong> → paste your Master sheet ID inside the quotes</div></div>
+        <div class="action"><div class="action-n">2</div><div class="action-txt">Delete <strong>"BRANCH1_SHEET_ID_HERE"</strong> → paste your JC Nagar sheet ID</div></div>
+        <div class="action"><div class="action-n">3</div><div class="action-txt">Repeat for branch2 and branch3</div></div>
+        <div class="action"><div class="action-n">4</div><div class="action-txt">Optionally change the <em>OWNER_PASSWORD</em> on line 28 to something personal</div></div>
+        <div class="action"><div class="action-n">5</div><div class="action-txt">Press <strong>Ctrl+S</strong> to save</div></div>
+      </div>
+      <div class="callout info" style="margin-top:12px">
+        <div class="callout-icon">💡</div>
+        <div class="callout-txt">IDs go <strong>inside the quotes</strong>. The quotes themselves must stay. Example: <code style="background:rgba(34,211,168,.12);padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px">"1BxiMVs0XRA5nFMdKv..."</code></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 4 ═══ -->
+<div class="step" id="step-4">
+  <div class="step-hdr">
+    <div class="step-num">4</div>
+    <div class="step-meta">
+      <div class="step-label">Step 04 · ~3 min</div>
+      <div class="step-title">Run Setup Functions</div>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="sub">
+      <div class="sub-title">Run firstTimeSetup</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">1</div><div class="action-txt">In the Apps Script editor, find the <strong>function dropdown</strong> near the top toolbar — it shows a function name</div></div>
+        <div class="action"><div class="action-n">2</div><div class="action-txt">Click the dropdown → select <strong>firstTimeSetup</strong></div></div>
+        <div class="action"><div class="action-n">3</div><div class="action-txt">Click ▶ <strong>Run</strong></div></div>
+        <div class="action"><div class="action-n">4</div><div class="action-txt">A permissions dialog appears — click <em>Review permissions</em> → choose your Gmail → click <em>Allow</em></div></div>
+        <div class="action"><div class="action-n">5</div><div class="action-txt">Wait for <strong>"Execution completed"</strong> to appear at the bottom of the screen</div></div>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="sub-title">Run setupTriggers</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">1</div><div class="action-txt">Same dropdown → select <strong>setupTriggers</strong> → click ▶ Run</div></div>
+        <div class="action"><div class="action-n">2</div><div class="action-txt">Wait for "Execution completed" — this creates 4 daily auto-jobs</div></div>
+      </div>
+      <div class="callout warn" style="margin-top:12px">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-txt"><strong>Don't skip permissions.</strong> If you see "Authorization required", click it and allow everything. Without this, the app cannot read/write Google Sheets.</div>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="sub-title">Verify it worked</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">✓</div><div class="action-txt">Open your Master Google Sheet — you should see 3 new tabs: <em>Branches</em>, <em>Settings</em>, <em>AdminLog</em></div></div>
+        <div class="action"><div class="action-n">✓</div><div class="action-txt">Open a branch sheet — you should see tabs: <em>Staff</em>, <em>Services</em>, <em>Products</em>, <em>Entries</em>, <em>Expenses</em>, <em>Reports</em>, <em>Daily</em>, <em>May 2026</em></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 5 ═══ -->
+<div class="step" id="step-5">
+  <div class="step-hdr">
+    <div class="step-num">5</div>
+    <div class="step-meta">
+      <div class="step-label">Step 05 · ~2 min</div>
+      <div class="step-title">Deploy &amp; Get Your URL</div>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="sub">
+      <div class="sub-title">Deploy as Web App</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">1</div><div class="action-txt">Click <strong>Deploy</strong> button (top right) → <strong>New deployment</strong></div></div>
+        <div class="action"><div class="action-n">2</div><div class="action-txt">Click the ⚙ gear icon next to "Select type" → choose <strong>Web app</strong></div></div>
+        <div class="action"><div class="action-n">3</div><div class="action-txt">Description: type anything, e.g. <em>Green Salon v1</em></div></div>
+        <div class="action"><div class="action-n">4</div><div class="action-txt">Execute as: <em>Me</em></div></div>
+        <div class="action"><div class="action-n">5</div><div class="action-txt">Who has access: <em>Anyone</em> — <strong>not</strong> "Anyone with Google account"</div></div>
+        <div class="action"><div class="action-n">6</div><div class="action-txt">Click <strong>Deploy</strong> → copy the URL that appears</div></div>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="sub-title">Your URL looks like this</div>
+      <div class="url-mockup">
+        <div class="url-bar">
+          <div class="url-dots"><span></span><span></span><span></span></div>
+          <div class="url-text"><em>https://script.google.com/macros/s/AKfycbx.../exec</em></div>
+        </div>
+        <div class="url-content">
+          <span style="color:var(--muted)">https://script.google.com/macros/s/</span><span style="color:var(--acc)">AKfycbxLongRandomStringHere</span><span style="color:var(--warn)">/exec</span><br><br>
+          <span style="color:var(--muted)">↑ Save this URL. You'll paste it in both apps.</span>
+        </div>
+      </div>
+      <div class="callout red" style="margin-top:12px">
+        <div class="callout-icon">🔴</div>
+        <div class="callout-txt"><strong>Must end with /exec</strong> — not /dev. The /dev URL is only for testing inside the editor and will fail in the app.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 6 ═══ -->
+<div class="step" id="step-6">
+  <div class="step-hdr">
+    <div class="step-num">6</div>
+    <div class="step-meta">
+      <div class="step-label">Step 06 · ~2 min</div>
+      <div class="step-title">Login to Owner Panel</div>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="sub">
+      <div class="sub-title">Open the owner panel</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">1</div><div class="action-txt">Open <strong>owner-panel.html</strong> in your browser — host it on GitHub Pages, Netlify, or open as a local file</div></div>
+        <div class="action"><div class="action-n">2</div><div class="action-txt">The <strong>first-time setup box</strong> appears at the top of the login page — paste your <em>/exec URL</em> there</div></div>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="sub-title">Where to paste the URL (visual)</div>
+      <div class="url-mockup">
+        <div class="url-bar">
+          <div class="url-dots"><span></span><span></span><span></span></div>
+          <div class="url-text">owner-panel.html</div>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="background:var(--s2);border:1px solid rgba(34,211,168,.3);border-radius:9px;padding:12px 14px">
+            <div style="font-size:10px;color:var(--acc);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;font-family:'DM Mono',monospace">⚙ First-time Setup</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Paste your Apps Script /exec URL below</div>
+            <div style="background:#020305;border:1px solid rgba(34,211,168,.3);border-radius:6px;padding:8px 12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--acc)">https://script.google.com/macros/s/AKf.../exec</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:6px">← Paste here, then enter name + password below</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:var(--s2);border:1px solid var(--b);border-radius:7px;padding:8px 12px;font-size:11px;color:var(--muted)">Admin Name: <span style="color:var(--txt)">Harsha</span></div>
+            <div style="background:var(--s2);border:1px solid var(--b);border-radius:7px;padding:8px 12px;font-size:11px;color:var(--muted)">Password: <span style="color:var(--warn)">••••••</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="sub-title">Default login credentials</div>
+      <div class="pw-row">
+        <div class="pw-lbl">Name</div>
+        <div class="pw-val">Harsha</div>
+      </div>
+      <div class="pw-row" style="margin-top:8px">
+        <div class="pw-lbl">Password</div>
+        <div class="pw-val">harsha@greensalon2026</div>
+      </div>
+      <div class="callout warn" style="margin-top:12px">
+        <div class="callout-icon">🔒</div>
+        <div class="callout-txt">Change this password in <strong>Code.gs line 28</strong> before going live. After changing, redeploy the script.</div>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="sub-title">After login — first thing to do</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">1</div><div class="action-txt">Click <strong>Fix All Branches</strong> button (top right of All Branches page)</div></div>
+        <div class="action"><div class="action-n">2</div><div class="action-txt">Wait 20–30 seconds — you'll see results showing <em>"OK"</em> for each tab</div></div>
+        <div class="action"><div class="action-n">3</div><div class="action-txt">All 3 branch cards should appear with ₹0 stats — means data connection is working</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 7 ═══ -->
+<div class="step" id="step-7">
+  <div class="step-hdr">
+    <div class="step-num">7</div>
+    <div class="step-meta">
+      <div class="step-label">Step 07 · ~1 min</div>
+      <div class="step-title">Set Up Staff App on Tablet</div>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="sub">
+      <div class="sub-title">Open and connect</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">1</div><div class="action-txt">Open <strong>staff-app.html</strong> on the tablet browser (Chrome recommended)</div></div>
+        <div class="action"><div class="action-n">2</div><div class="action-txt">Paste your <em>/exec URL</em> in the setup screen</div></div>
+        <div class="action"><div class="action-n">3</div><div class="action-txt">Select the branch for this tablet (e.g. JC Nagar → branch1)</div></div>
+        <div class="action"><div class="action-n">4</div><div class="action-txt">Tap <strong>Connect & Open App</strong> — staff cards appear</div></div>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="sub-title">Install as PWA (Add to Home Screen)</div>
+      <div class="actions">
+        <div class="action"><div class="action-n">1</div><div class="action-txt">In Chrome, tap the <strong>⋮ menu</strong> (three dots, top right)</div></div>
+        <div class="action"><div class="action-n">2</div><div class="action-txt">Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong></div></div>
+        <div class="action"><div class="action-n">3</div><div class="action-txt">Tap <em>Install</em> — a Green Salon icon appears on the home screen</div></div>
+        <div class="action"><div class="action-n">4</div><div class="action-txt">Open from that icon — it runs fullscreen with no browser bar ✓</div></div>
+      </div>
+      <div class="callout info" style="margin-top:12px">
+        <div class="callout-icon">📱</div>
+        <div class="callout-txt">On <strong>iOS Safari</strong>: tap the Share icon (box with arrow) → <em>Add to Home Screen</em>. Works the same way.</div>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="sub-title">Final test checklist</div>
+      <div class="checklist" id="checklist">
+        <div class="chk" onclick="this.classList.toggle('done');this.querySelector('.chk-box').textContent=this.classList.contains('done')?'✓':''">
+          <div class="chk-box"></div>
+          <div class="chk-txt">Staff grid loads with 3 sample staff cards</div>
+        </div>
+        <div class="chk" onclick="this.classList.toggle('done');this.querySelector('.chk-box').textContent=this.classList.contains('done')?'✓':''">
+          <div class="chk-box"></div>
+          <div class="chk-txt">Tap a staff card → service chips appear</div>
+        </div>
+        <div class="chk" onclick="this.classList.toggle('done');this.querySelector('.chk-box').textContent=this.classList.contains('done')?'✓':''">
+          <div class="chk-box"></div>
+          <div class="chk-txt">Submit a test entry → green toast appears</div>
+        </div>
+        <div class="chk" onclick="this.classList.toggle('done');this.querySelector('.chk-box').textContent=this.classList.contains('done')?'✓':''">
+          <div class="chk-box"></div>
+          <div class="chk-txt">Owner panel Today page shows the entry within 5 seconds</div>
+        </div>
+        <div class="chk" onclick="this.classList.toggle('done');this.querySelector('.chk-box').textContent=this.classList.contains('done')?'✓':''">
+          <div class="chk-box"></div>
+          <div class="chk-txt">Monthly tab has today's row with correct amounts</div>
+        </div>
+        <div class="chk" onclick="this.classList.toggle('done');this.querySelector('.chk-box').textContent=this.classList.contains('done')?'✓':''">
+          <div class="chk-box"></div>
+          <div class="chk-txt">Staff app installed as PWA icon on home screen</div>
+        </div>
+        <div class="chk" onclick="this.classList.toggle('done');this.querySelector('.chk-box').textContent=this.classList.contains('done')?'✓':''">
+          <div class="chk-box"></div>
+          <div class="chk-txt">60-second auto-return timer works after submit</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DONE BANNER -->
+<div class="done-banner">
+  <div class="done-icon">🎉</div>
+  <div class="done-title">You're Live!</div>
+  <div class="done-sub">Green Salon is fully set up. Staff can start recording entries. Owner panel refreshes every 5 seconds automatically.</div>
+</div>
+
+</div><!-- end .steps -->
+</div><!-- end .wrap -->
+
+<script>
+// Scroll to a step block by number
+function scrollToStep(n) {
+  const el = document.getElementById("step-" + n);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// Update progress bar as user scrolls
+function updateProgress() {
+  const steps = document.querySelectorAll(".step");
+  const pSteps = document.querySelectorAll(".pb-step");
+  const pLines = document.querySelectorAll(".pb-line");
+  const mid = window.innerHeight / 2;
+  let current = 0;
+  steps.forEach((s, i) => {
+    const rect = s.getBoundingClientRect();
+    if (rect.top < mid) current = i + 1;
+  });
+  pSteps.forEach((ps, i) => {
+    ps.classList.remove("active", "done");
+    if (i + 1 < current) ps.classList.add("done");
+    else if (i + 1 === current) ps.classList.add("active");
+  });
+  pLines.forEach((pl, i) => {
+    pl.classList.toggle("done", i + 1 < current);
+  });
+}
+window.addEventListener("scroll", updateProgress, { passive: true });
+updateProgress();
+</script>
+</body>
+</html>
