@@ -37,6 +37,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);disp
 .bar-right{display:flex;align-items:center;gap:12px}
 .bar-time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .btn-change{padding:5px 12px;border-radius:8px;border:1px solid var(--b2);background:transparent;color:var(--dim);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;display:none}
+.btn-refresh{padding:5px 11px;border-radius:8px;border:1px solid var(--b2);background:transparent;color:var(--acc);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:4px;transition:all .15s}
+.btn-refresh:active{transform:rotate(180deg);opacity:.7}
+.btn-logout{padding:4px 10px;border-radius:8px;border:1px solid rgba(244,63,94,.25);background:rgba(244,63,94,.06);color:var(--danger);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-logout:hover{background:rgba(244,63,94,.14)}
 
 /* ── SCREEN CONTAINER ── */
 .screens{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
@@ -241,6 +245,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);disp
   </div>
   <div class="bar-right">
     <div class="bar-time" id="bar-time"></div>
+    <button class="btn-refresh" id="btn-refresh" onclick="doRefresh()" title="Refresh">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    </button>
+    <button class="btn-logout" id="btn-logout" onclick="doLogout()" style="display:none" title="Logout">✕ Exit</button>
     <button class="btn-change" id="btn-change" onclick="showChangeBranch()">⚙ Setup</button>
   </div>
 </div>
@@ -521,12 +529,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);disp
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="ver">one stop solutions - dlb | v22</div>
+
+<!-- SAVING OVERLAY — instant visual feedback -->
+<div id="save-overlay" style="display:none;position:fixed;inset:0;background:rgba(8,9,13,.88);z-index:800;align-items:center;justify-content:center;flex-direction:column;gap:16px;backdrop-filter:blur(4px)">
+  <div style="width:52px;height:52px;border:3px solid rgba(34,211,168,.2);border-top-color:var(--acc);border-radius:50%;animation:spin .6s linear infinite"></div>
+  <div id="save-msg" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--acc)">Saving...</div>
+  <div id="save-sub" style="font-size:12px;color:var(--muted)">Please wait — sending to Google Sheet</div>
+</div>
+<div class="ver">one stop solutions - dlb | v23</div>
 
 <script>
 // ══════════════════════════════════════════════════════
-// GREEN SALON STAFF APP v22
-// Fixes: tablet layout · my log after submit · all sync
+// GREEN SALON STAFF APP v23
+// v23: refresh + logout + auto-goGrid + saving overlay
 // one stop solutions - dlb
 // ══════════════════════════════════════════════════════
 document.addEventListener('contextmenu',e=>e.preventDefault());
@@ -577,10 +592,29 @@ async function GET(a){
   return r.json();
 }
 async function POST(b){
-  const r=await fetch(cfg.url,{method:'POST',body:JSON.stringify({...b,branchId:cfg.bid})});
-  const ct=r.headers.get('content-type')||'';
-  if(!ct.includes('json')&&!ct.includes('plain'))throw new Error('API error — check deployment settings');
-  return r.json();
+  // Show slow-connection warning after 4s
+  let slowTimer=null;
+  const overlay=document.getElementById('save-overlay');
+  if(overlay&&overlay.style.display==='flex'){
+    slowTimer=setTimeout(()=>{
+      const sub=document.getElementById('save-sub');
+      if(sub)sub.textContent='Slow internet — still trying...';
+    },4000);
+  }
+  try{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),28000);
+    const r=await fetch(cfg.url,{method:'POST',body:JSON.stringify({...b,branchId:cfg.bid}),signal:controller.signal});
+    clearTimeout(timeout);
+    if(slowTimer)clearTimeout(slowTimer);
+    const ct=r.headers.get('content-type')||'';
+    if(!ct.includes('json')&&!ct.includes('plain'))throw new Error('API error — check deployment settings');
+    return r.json();
+  }catch(ex){
+    if(slowTimer)clearTimeout(slowTimer);
+    if(ex.name==='AbortError')throw new Error('Request timed out — check internet connection');
+    throw ex;
+  }
 }
 
 // ── URL VALIDATE ───────────────────────────────────────
@@ -642,6 +676,7 @@ async function saveSetup(){
     document.getElementById('bnav').classList.remove('vis');
     document.getElementById('btn-change').style.display='none';
     toast('✓ Tablet locked to '+bn);
+    const rb=document.getElementById('btn-refresh');if(rb)rb.style.display='flex';
   }catch(ex){
     errEl.className='setup-err err';
     errEl.textContent='❌ '+(ex.message.includes('JSON')||ex.message.includes('DOCTYPE')?'Connection failed — ensure "Anyone" access and URL ends with /exec':ex.message);
@@ -651,7 +686,10 @@ function showBranchTag(){document.getElementById('branch-name-top').textContent=
 
 // ── BOOT LOAD ─────────────────────────────────────────
 async function boot(){
-  try{await loadStaff();await loadServices();await loadProducts();loadSummary();show('s-grid');}
+  try{await loadStaff();await loadServices();await loadProducts();loadSummary();show('s-grid');
+    // Show refresh button once loaded
+    const rb=document.getElementById('btn-refresh');if(rb)rb.style.display='flex';
+  }
   catch(ex){toast('Load error: '+ex.message,true);show('s-setup');}
 }
 async function loadStaff(){const d=await GET('getStaff');if(d.success){S.staff=d.staff||[];renderGrid();}}
@@ -701,11 +739,15 @@ function selStaff(id){
   document.getElementById('bnav').classList.add('vis');
   document.getElementById('ni-add').classList.add('on');
   document.getElementById('ni-log').classList.remove('on');
+  // Show logout button when staff session active
+  const lb=document.getElementById('btn-logout');if(lb)lb.style.display='block';
 }
 function goGrid(){
   S.sel=null;
   show('s-grid');
   document.getElementById('bnav').classList.remove('vis');
+  // Hide logout when back on grid
+  const lb=document.getElementById('btn-logout');if(lb)lb.style.display='none';
   loadStaff();loadSummary();
 }
 
@@ -793,30 +835,36 @@ function selPay(pre,m){
 // ── SUBMIT — then go straight to My Log ───────────────
 async function subService(){
   const btn=document.getElementById('svc-sub');
-  btn.disabled=true;btn.innerHTML='<div class="sp" style="border-top-color:#08090d"></div> Saving...';
+  btn.disabled=true;
+  // Show overlay IMMEDIATELY — before network call
+  showSaving('Saving '+S.svcSvc+'...');
   try{
     const d=await POST({action:'submitEntry',staffId:S.sel.id,staffName:S.sel.name,
       service:S.svcSvc,amount:document.getElementById('svc-amt').value,
       tip:document.getElementById('svc-tip').value||0,paymentMethod:S.svcPay});
+    hideSaving();
     if(d.success){
-      toast('✓ '+S.svcSvc+' saved — '+S.svcPay);
-      loadSummary();
-      // GO TO MY LOG immediately after submit
-      goToLog();
-    }else toast('Error: '+(d.error||'unknown'),true);
-  }catch(ex){toast('Error: '+ex.message,true);}
+      toast('✓ '+S.svcSvc+' saved!');
+      loadSummary(); // fire and forget — non-blocking
+      goGrid(); // back to staff grid immediately
+    }else{toast('Error: '+(d.error||'unknown'),true);}
+  }catch(ex){hideSaving();toast('⚠ '+(ex.message.includes('timed out')?'Slow internet — try again':ex.message),true);}
+  btn.disabled=false;
   btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Submit Service';
   chkSvc();
 }
 
 async function subProduct(){
   const btn=document.getElementById('prod-sub');
-  btn.disabled=true;btn.innerHTML='<div class="sp" style="border-top-color:#fff"></div> Saving...';
+  btn.disabled=true;
+  showSaving('Saving Product...');
   try{
     const d=await POST({action:'submitProduct',product:S.prodProd,amount:document.getElementById('prod-amt').value,paymentMethod:S.prodPay});
-    if(d.success){toast('✓ Product saved — '+S.prodPay);loadSummary();goGrid();}
-    else toast('Error: '+(d.error||'unknown'),true);
-  }catch(ex){toast('Error: '+ex.message,true);}
+    hideSaving();
+    if(d.success){toast('✓ Product saved!');loadSummary();goGrid();}
+    else{toast('Error: '+(d.error||'unknown'),true);}
+  }catch(ex){hideSaving();toast('⚠ '+(ex.message.includes('timed out')?'Slow internet — try again':ex.message),true);}
+  btn.disabled=false;
   btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Submit Product Sale';
   chkProd();
 }
@@ -825,12 +873,15 @@ async function subExpense(){
   const btn=document.getElementById('exp-sub');
   const desc=document.getElementById('exp-desc').value.trim();
   const amt=document.getElementById('exp-amt').value;
-  btn.disabled=true;btn.innerHTML='<div class="sp" style="border-top-color:#fff"></div> Saving...';
+  btn.disabled=true;
+  showSaving('Saving Expense...');
   try{
     const d=await POST({action:'submitExpense',description:desc,amount:amt,paymentMethod:S.expPay});
-    if(d.success){toast('✓ Expense saved — '+S.expPay);loadSummary();goGrid();}
-    else toast('Error: '+(d.error||'unknown'),true);
-  }catch(ex){toast('Error: '+ex.message,true);}
+    hideSaving();
+    if(d.success){toast('✓ Expense saved!');loadSummary();goGrid();}
+    else{toast('Error: '+(d.error||'unknown'),true);}
+  }catch(ex){hideSaving();toast('⚠ '+(ex.message.includes('timed out')?'Slow internet — try again':ex.message),true);}
+  btn.disabled=false;
   btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Submit Expense';
   chkExp();
 }
@@ -967,6 +1018,41 @@ function toast(msg,isErr){
   setTimeout(()=>t.className='toast',2800);
 }
 
+// ── OVERLAY HELPERS ───────────────────────────────────
+function showSaving(msg='Saving...'){
+  const ov=document.getElementById('save-overlay');
+  const sm=document.getElementById('save-msg');
+  const ss=document.getElementById('save-sub');
+  if(sm)sm.textContent=msg;
+  if(ss)ss.textContent='Please wait — sending to Google Sheet';
+  if(ov){ov.style.display='flex';ov.style.flexDirection='column';ov.style.alignItems='center';ov.style.justifyContent='center';}
+}
+function hideSaving(){
+  const ov=document.getElementById('save-overlay');
+  if(ov)ov.style.display='none';
+}
+
+// ── REFRESH ───────────────────────────────────────────
+function doRefresh(){
+  const btn=document.getElementById('btn-refresh');
+  if(btn){btn.style.transform='rotate(360deg)';btn.style.transition='transform .5s';setTimeout(()=>{btn.style.transform='';btn.style.transition='';},500);}
+  // Reload data based on current screen
+  loadStaff();loadSummary();
+  const pg=document.querySelector('.scr.on')?.id;
+  if(pg==='s-log'&&S.sel) loadLog();
+  toast('Refreshed ✓');
+}
+
+// ── LOGOUT ────────────────────────────────────────────
+function doLogout(){
+  if(!confirm('Exit staff session? Tablet will return to home screen.')) return;
+  S.sel=null;S.logData=null;
+  document.getElementById('bnav').classList.remove('vis');
+  show('s-grid');
+  loadStaff();loadSummary();
+  toast('Returned to home');
+}
+
 // ── PWA ────────────────────────────────────────────────
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{
@@ -984,13 +1070,13 @@ function installPWA(){
   else alert('iPhone/iPad:\n1. Tap Share in Safari\n2. Tap "Add to Home Screen"\n3. Tap Add\n\nApp opens full screen like a native app.');
 }
 function initPWA(){
-  const manifest={name:"Green Salon",short_name:"Green Salon",description:"Salon billing - v22",start_url:location.pathname,
+  const manifest={name:"Green Salon",short_name:"Green Salon",description:"Salon billing - v23",start_url:location.pathname,
     display:"standalone",orientation:"any",background_color:"#08090d",theme_color:"#08090d",
     icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%2308090d'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' fill='%2322d3a8' font-family='Arial'%3E%E2%9C%82%3C/text%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
   const blob=new Blob([JSON.stringify(manifest)],{type:"application/json"});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
   if('serviceWorker' in navigator){
-    const sw=`const C='gs-v22';self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==C).map(n=>caches.delete(n)))));self.clients.claim();});self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||e.request.url.includes('script.google.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{if(resp.ok){const rc=resp.clone();caches.open(C).then(c=>c.put(e.request,rc));}return resp;}).catch(()=>caches.match(e.request))));});`;
+    const sw=`const C='gs-v23';self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==C).map(n=>caches.delete(n)))));self.clients.claim();});self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||e.request.url.includes('script.google.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{if(resp.ok){const rc=resp.clone();caches.open(C).then(c=>c.put(e.request,rc));}return resp;}).catch(()=>caches.match(e.request))));});`;
     navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
   }
 }
