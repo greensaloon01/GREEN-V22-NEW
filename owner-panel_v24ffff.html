@@ -405,8 +405,8 @@ tr:hover td{background:rgba(255,255,255,.012)}
     <div class="card-head"><div class="card-title">Add New Staff Member</div></div>
     <div class="card-body">
       <div class="form-row">
-        <div class="field"><label>Full Name</label><input type="text" id="ns-name" placeholder="e.g. Ali" oninput="chkStaffForm()"></div>
-        <div class="field"><label>4-Digit PIN</label><input type="text" id="ns-pin" placeholder="1234" maxlength="4" inputmode="numeric" oninput="chkStaffForm()"></div>
+        <div class="field"><label>Full Name</label><input type="text" id="ns-name" placeholder="e.g. Ali" oninput="chkStaffForm()" onkeydown="if(event.key==='Enter')event.preventDefault()"></div>
+        <div class="field"><label>4-Digit PIN</label><input type="text" id="ns-pin" placeholder="1234" maxlength="4" inputmode="numeric" oninput="chkStaffForm()" onkeydown="if(event.key==='Enter')event.preventDefault()"></div>
         <div class="field"><label>Commission %</label><input type="number" id="ns-comm" placeholder="40" min="0" max="100" value="40"></div>
       </div>
       <div class="tgl-row">
@@ -1032,12 +1032,19 @@ async function saveCommDirect(sid,pct,has){
     if(d.success) toast('Commission updated ✓'); else toast('Error: '+d.error, true);
   }catch(ex){ toast(ex.message, true); }
 }
+let _addingStaff=false; // LOCK: prevents double-submit
 async function addStaff(){
+  // STRICT guard — re-read values at call time, never trust stale state
   const name = document.getElementById('ns-name').value.trim();
   const pin  = document.getElementById('ns-pin').value.trim();
   const comm = Number(document.getElementById('ns-comm').value)||40;
   const hasc = document.getElementById('ns-tgl').classList.contains('on');
-  if(!name||pin.length!==4){ toast('Enter name and 4-digit PIN',true); return; }
+  // Hard validation — if empty/invalid, abort silently (handles double-call with cleared fields)
+  if(!name || name.length<1){ toast('Enter staff name',true); return; }
+  if(pin.length!==4 || !/^\d{4}$/.test(pin)){ toast('PIN must be exactly 4 digits',true); return; }
+  // LOCK: prevent double submit (button click + Enter key + double tap)
+  if(_addingStaff){ return; }
+  _addingStaff=true;
   const btn=document.getElementById('add-staff-btn');
   if(btn){btn.classList.remove('ready');btn.classList.add('saving');btn.setAttribute('disabled','');btn.textContent='Saving...';}
   const t=showSave('Adding '+name+'...','Saving to Google Sheet');
@@ -1053,6 +1060,7 @@ async function addStaff(){
       await loadStaff();
     } else { hideSave(t); toast('Error: '+d.error, true); }
   }catch(ex){ hideSave(t); toast(ex.message, true); }
+  finally{ _addingStaff=false; } // always release lock
   if(btn&&!btn.classList.contains('saving')){btn.classList.remove('saving');chkStaffForm();}
 }
 async function rmStaff(id,name){
