@@ -191,7 +191,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);disp
 .edot.c{background:var(--cash)}.edot.o{background:var(--online)}.edot.u{background:var(--upi)}
 .einfo{flex:1;min-width:0}
 .esvc{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.etime{font-size:12px;color:var(--muted);margin-top:2px}
+.etime{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;flex-wrap:wrap;gap:2px;line-height:1.5}
 .eamt{text-align:right;flex-shrink:0}
 .eamt-v{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:var(--acc)}
 .etip{font-size:11px;color:var(--warn);margin-top:2px}
@@ -536,11 +536,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);disp
   <div id="save-msg" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--acc)">Saving...</div>
   <div id="save-sub" style="font-size:12px;color:var(--muted)">Please wait — sending to Google Sheet</div>
 </div>
-<div class="ver">one stop solutions - dlb | v23</div>
+<div class="ver">one stop solutions - dlb | v24</div>
 
 <script>
 // ══════════════════════════════════════════════════════
-// GREEN SALON STAFF APP v23
+// GREEN SALON STAFF APP v24
 // v23: refresh + logout + auto-goGrid + saving overlay
 // one stop solutions - dlb
 // ══════════════════════════════════════════════════════
@@ -908,6 +908,54 @@ async function loadLog(){
   }
 }
 
+// ── FORMAT TIMESTAMP ─────────────────────────────────
+// Handles both GAS format: "07-May-2026 08:25:10 PM"
+// and ISO format: "2026-05-16T14:25:10.000Z"
+// Returns: { date: "16 May 2026", time: "08:25 PM" }
+function fmtTimestamp(raw){
+  if(!raw) return {date:'—',time:'—'};
+  const s=String(raw).trim();
+  try{
+    let dt;
+    // GAS IST format: "07-May-2026 08:25:10 PM" or "07-May-2026 20:25:10"
+    const gasMatch=s.match(/^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}:\d{2}:\d{2})\s*(AM|PM)?/i);
+    if(gasMatch){
+      const dateStr=gasMatch[1]; // "07-May-2026"
+      const timeStr=gasMatch[2]; // "08:25:10"
+      const ampm=gasMatch[3]||''; // "PM" or ""
+      // Parse date
+      const dp=dateStr.split('-');
+      const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+      const mo=months[dp[1].toLowerCase()]??0;
+      const yr=parseInt(dp[2]);
+      const dy=parseInt(dp[0]);
+      // Parse time
+      const tp=timeStr.split(':');
+      let hr=parseInt(tp[0]);
+      const mn=tp[1];
+      if(ampm.toUpperCase()==='PM'&&hr!==12) hr+=12;
+      if(ampm.toUpperCase()==='AM'&&hr===12) hr=0;
+      dt=new Date(yr,mo,dy,hr,parseInt(mn),0);
+    } else {
+      // ISO or any other format — parse directly
+      dt=new Date(s);
+      // Convert UTC to IST (+5:30)
+      if(!isNaN(dt.getTime())) dt=new Date(dt.getTime()+5.5*60*60*1000);
+    }
+    if(!dt||isNaN(dt.getTime())) return {date:s.split(' ')[0]||s,time:s.split(' ')[1]||''};
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const date=dt.getDate()+' '+months[dt.getMonth()]+' '+dt.getFullYear();
+    let hr=dt.getHours();
+    const mn=String(dt.getMinutes()).padStart(2,'0');
+    const ampm=hr>=12?'PM':'AM';
+    hr=hr%12||12;
+    const time=hr+':'+mn+' '+ampm;
+    return {date,time};
+  }catch(ex){
+    return {date:s.substring(0,10)||'—',time:'—'};
+  }
+}
+
 function renderLog(d){
   if(!S.sel)return;
   document.getElementById('log-title').textContent=S.sel.name+"'s Log";
@@ -919,15 +967,19 @@ function renderLog(d){
   if(!tot){el.innerHTML='<div class="empty"><div class="empty-ic">📋</div><div>No entries yet today</div></div>';return;}
   el.innerHTML=d.entries.map(e=>{
     const dc=e.paymentMethod==='Cash'?'c':e.paymentMethod==='UPI'?'u':'o';
-    // Show full timestamp (date + time) in my log
-    const ts=String(e.timestamp||'');
-    const timePart=ts.split(' ')[1]||ts.substring(0,8)||'';
-    const datePart=ts.split(' ')[0]||'';
+    const {date,time}=fmtTimestamp(e.timestamp);
+    const payColor=e.paymentMethod==='Cash'?'color:var(--cash)':e.paymentMethod==='UPI'?'color:var(--upi)':'color:var(--online)';
     return`<div class="eitem">
       <div class="edot ${dc}"></div>
       <div class="einfo">
         <div class="esvc">${esc(e.service)}</div>
-        <div class="etime">${esc(datePart)} ${esc(timePart)} · ${e.paymentMethod}</div>
+        <div class="etime">
+          <span style="color:var(--txt);font-weight:500">${esc(time)}</span>
+          <span style="opacity:.5;margin:0 4px">·</span>
+          <span>${esc(date)}</span>
+          <span style="opacity:.5;margin:0 4px">·</span>
+          <span style="${payColor};font-weight:500">${esc(e.paymentMethod)}</span>
+        </div>
       </div>
       <div class="eamt">
         <div class="eamt-v">₹${e.amount}</div>
@@ -1076,7 +1128,7 @@ function initPWA(){
   const blob=new Blob([JSON.stringify(manifest)],{type:"application/json"});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
   if('serviceWorker' in navigator){
-    const sw=`const C='gs-v23';self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==C).map(n=>caches.delete(n)))));self.clients.claim();});self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||e.request.url.includes('script.google.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{if(resp.ok){const rc=resp.clone();caches.open(C).then(c=>c.put(e.request,rc));}return resp;}).catch(()=>caches.match(e.request))));});`;
+    const sw=`const C='gs-v24';self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==C).map(n=>caches.delete(n)))));self.clients.claim();});self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||e.request.url.includes('script.google.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{if(resp.ok){const rc=resp.clone();caches.open(C).then(c=>c.put(e.request,rc));}return resp;}).catch(()=>caches.match(e.request))));});`;
     navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
   }
 }
